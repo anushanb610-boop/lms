@@ -59,6 +59,26 @@ CREATE TABLE borrow_records (
     INDEX idx_user (user_id)
 );
 
+-- Active borrowed books (denormalized view for easier querying)
+CREATE TABLE borrowed_books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id INT NOT NULL,
+    book_id INT NOT NULL,
+    user_id INT NOT NULL,
+    borrowed_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    status ENUM('borrowed','overdue','returned') NOT NULL DEFAULT 'borrowed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (request_id) REFERENCES borrow_records(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user (user_id),
+    INDEX idx_status (status),
+    INDEX idx_book (book_id),
+    INDEX idx_request (request_id)
+);
+
 -- Notifications table for user/staff/admin alerts
 CREATE TABLE notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -7,7 +7,13 @@ body {
 }
 header {
   background: var(--header-bg);
-  color: var(--header-text); padding: 1.25rem 2rem;
+  color: var(--header-text); 
+  padding: 1.25rem 1.5rem;
+}
+@media (min-width: 1024px) {
+  header {
+    padding: 1.25rem 2.5rem;
+  }
 }
 header h1 { margin: 0; font-size: 1.5rem; }
 nav { display: flex; gap: 1rem; margin-top: .5rem; flex-wrap: wrap; }
@@ -44,12 +50,29 @@ nav button.active { background: var(--nav-active-bg); color: var(--nav-active-te
   color: white;
   font-size: .75rem;
 }
-main { width: 100%; margin: 0; padding: 1.5rem 2rem 2rem; min-height: calc(100vh - 200px); }
-.page-card, .card {
-  background: var(--card-bg); border-radius: 18px; padding: 1.5rem;
-  box-shadow: var(--body-shadow); margin-bottom: 1.5rem;
+main { width: 100%; margin: 0; padding: 1.5rem 1.5rem 2rem; min-height: calc(100vh - 200px); }
+@media (max-width: 640px) {
+  main { padding: 1rem 1rem 1.5rem; }
 }
-.auth-card { max-width: 520px; margin: 1.5rem auto; }
+@media (min-width: 1024px) {
+  main { padding: 2rem 2.5rem 2.5rem; }
+}
+.page-card, .card {
+  background: var(--card-bg); 
+  border-radius: 18px; 
+  padding: 1.25rem;
+  box-shadow: var(--body-shadow); 
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 768px) {
+  .page-card, .card {
+    padding: 1.5rem;
+  }
+}
+.auth-card { max-width: 100%; width: 520px; margin: 1.5rem auto; padding: 0 1.5rem; }
+@media (max-width: 640px) {
+  .auth-card { width: 100%; }
+}
 .page-header {
   display: flex;
   flex-wrap: wrap;
@@ -59,14 +82,19 @@ main { width: 100%; margin: 0; padding: 1.5rem 2rem 2rem; min-height: calc(100vh
   margin-bottom: 1.25rem;
 }
 .page-header h2 { margin: 0; font-size: 1.45rem; }
-.page-header .subtitle { margin: .35rem 0 0; color: var(--muted); max-width: 720px; }
+.page-header .subtitle { margin: .35rem 0 0; color: var(--muted); max-width: 100%; }
 .page-header-actions { display: flex; gap: .75rem; flex-wrap: wrap; }
 .main-content { min-height: 70vh; }
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
 }
 .stat-card {
   background: var(--secondary-bg);
@@ -83,7 +111,12 @@ main { width: 100%; margin: 0; padding: 1.5rem 2rem 2rem; min-height: calc(100vh
 .dashboard-sections {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .dashboard-sections {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
 }
 .dashboard-panel { width: 100%; }
 .section-card {
@@ -110,7 +143,11 @@ main { width: 100%; margin: 0; padding: 1.5rem 2rem 2rem; min-height: calc(100vh
 .approvals-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: 1.25rem; }
 .books-filter { color: var(--muted); font-weight: 600; }
 .approvals-toolbar input,
-.approvals-toolbar select { min-width: 180px; max-width: 240px; }
+.approvals-toolbar select { min-width: 180px; max-width: 100%; flex: 1; }
+@media (max-width: 640px) {
+  .approvals-toolbar input,
+  .approvals-toolbar select { min-width: 100%; }
+}
 .pagination { display: flex; gap: .75rem; align-items: center; justify-content: flex-end; margin-top: 1rem; }
 .icon-btn { border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.14); color: white; border-radius: 10px; padding: .5rem .8rem; cursor: pointer; }
 .icon-btn:hover { background: rgba(255,255,255,.25); }
@@ -119,7 +156,10 @@ main { width: 100%; margin: 0; padding: 1.5rem 2rem 2rem; min-height: calc(100vh
 .user-panel .user-avatar { width: 44px; height: 44px; }
 .user-panel .user-info { min-width: 180px; }
 .header-actions { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-.notif-dropdown { position: absolute; right: 2rem; top: 6.5rem; width: min(320px, 90vw); z-index: 20; padding: 1rem; }
+.notif-dropdown { position: absolute; right: 1.5rem; top: 6.5rem; width: min(320px, calc(100vw - 3rem)); z-index: 20; padding: 1rem; border: 1px solid var(--table-border); border-radius: 12px; background: var(--card-bg); box-shadow: var(--body-shadow); }
+@media (max-width: 640px) {
+  .notif-dropdown { right: 0.75rem; width: min(280px, calc(100vw - 1.5rem)); top: 5.5rem; }
+}
 .notif-dropdown ul { list-style: none; padding: 0; margin: .75rem 0 0; max-height: 280px; overflow-y: auto; }
 .notif-dropdown li { margin-bottom: .8rem; line-height: 1.4; color: var(--text); }
 .notif-dropdown li small { display: block; color: var(--muted); margin-top: .25rem; font-size: .8rem; }
@@ -129,8 +169,12 @@ main { width: 100%; margin: 0; padding: 1.5rem 2rem 2rem; min-height: calc(100vh
   border-radius: 999px; cursor: pointer; font-size: .85rem; color: var(--text);
 }
 .subjects button.active { background: var(--primary); color: var(--primary-text); }
-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-th, td { padding: .65rem .5rem; text-align: left; border-bottom: 1px solid var(--table-border); vertical-align: middle; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+@media (max-width: 768px) {
+  table { font-size: 0.85rem; }
+  th, td { padding: 0.5rem 0.4rem; }
+}
+th, td { padding: 0.65rem 0.5rem; text-align: left; border-bottom: 1px solid var(--table-border); vertical-align: middle; }
 th { background: var(--table-header); font-weight: 600; }
 button.primary {
   background: var(--primary); color: var(--primary-text); border: none;
@@ -282,10 +326,18 @@ textarea {
 .badge.overdue { background: #fee2e2; color: #991b1b; }
 .badge.pending { background: #dbeafe; color: #1e40af; }
 input {
-  padding: .5rem .7rem; border: 1px solid var(--table-border);
-  border-radius: 6px; font-size: .9rem; width: 100%;
+  padding: .5rem .7rem; 
+  border: 1px solid var(--table-border);
+  border-radius: 6px; 
+  font-size: .9rem; 
+  width: 100%;
   background: var(--input-bg);
   color: var(--text);
+}
+@media (max-width: 640px) {
+  input {
+    font-size: 16px;
+  }
 }
 label {
   display: block;
@@ -294,9 +346,15 @@ label {
   color: var(--label-text);
 }
 .form-group { margin-bottom: 1rem; }
-.form-card { max-width: 460px; margin: 0 auto; }
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
-.modal { background: var(--card-bg); border-radius: 16px; padding: 1.5rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px rgba(0,0,0,.15); }
+.form-card { max-width: 100%; width: 460px; margin: 0 auto; padding: 0 1.5rem; }
+@media (max-width: 640px) {
+  .form-card { width: 100%; }
+}
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 1.5rem; }
+.modal { background: var(--card-bg); border-radius: 16px; padding: 1.5rem; max-width: 100%; width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px rgba(0,0,0,.15); }
+@media (max-width: 640px) {
+  .modal { width: 100%; }
+}
 .modal h3 { margin: 0 0 1rem; color: var(--text); }
 .modal form > div { margin-bottom: 1rem; }
 .modal form label { display: block; margin-bottom: .4rem; font-weight: 500; }
@@ -341,10 +399,14 @@ button.secondary:hover {
 .modal-bg {
   position: fixed; inset: 0; background: rgba(0,0,0,.4);
   display: flex; align-items: center; justify-content: center; z-index: 50;
+  padding: 1.5rem;
 }
-.modal {
+.modal-bg .modal {
   background: var(--card-bg); border-radius: 10px; padding: 1.5rem;
-  width: 90%; max-width: 400px;
+  width: 400px; max-width: 100%;
+}
+@media (max-width: 640px) {
+  .modal-bg .modal { width: 100%; }
 }
 .row { display: flex; gap: .5rem; justify-content: flex-end; margin-top: 1rem; }
 .empty { text-align: center; color: var(--muted); padding: 2rem; }
@@ -376,6 +438,13 @@ button.secondary:hover {
   border-radius: 12px;
   animation: slideInUp 0.4s ease;
 }
+@media (max-width: 768px) {
+  .books-toolbar-modern {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+}
 
 .filter-section {
   display: flex;
@@ -383,6 +452,13 @@ button.secondary:hover {
   gap: 0.75rem;
   flex: 1;
   min-width: 220px;
+}
+@media (max-width: 768px) {
+  .filter-section {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .filter-label {

@@ -720,9 +720,44 @@ def active_records():
     auth = get_auth()
     if not auth:
         return jsonify({"error": "Unauthorized"}), 401
-    # Include all records that haven't been returned (returned_date IS NULL)
-    # This includes both borrowed and overdue books
-    return jsonify(_records(auth, "WHERE r.returned_date IS NULL"))
+    
+    conn = get_conn(); cur = conn.cursor()
+    try:
+        where_clause = ""
+        params = ()
+        
+        # For regular users, filter by their user_id
+        if auth["role"] == "user":
+            where_clause = "WHERE bb.user_id=%s"
+            params = (auth["id"],)
+        elif auth["role"] in ("admin", "staff"):
+            where_clause = ""
+        else:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        sql = f"""SELECT bb.id, bb.book_id, b.title, b.subject, b.author,
+                         bb.user_id, br.borrower_name, bb.borrowed_date, bb.due_date,
+                         bb.status, bb.request_id
+                  FROM borrowed_books bb
+                  JOIN books b ON b.id = bb.book_id
+                  JOIN borrow_records br ON br.id = bb.request_id
+                  {where_clause}
+                  ORDER BY bb.borrowed_date DESC, bb.id DESC"""
+        
+        cur.execute(sql, params)
+        data = rows(cur)
+        
+        # Format dates
+        for d in data:
+            if d.get("borrowed_date"):
+                d["borrow_date"] = str(d["borrowed_date"])
+                del d["borrowed_date"]
+            if d.get("due_date") is not None:
+                d["due_date"] = str(d["due_date"])
+        
+        return jsonify(data)
+    finally:
+        cur.close(); conn.close()
 
 
 @app.route("/api/records/history", methods=["GET"])
@@ -738,7 +773,36 @@ def overdue_records():
     auth = get_auth()
     if not auth or auth["role"] not in ("admin", "staff"):
         return jsonify({"error": "Forbidden"}), 403
-    return jsonify(_records(auth, f"WHERE r.status='overdue' OR (r.status='borrowed' AND r.due_date < '{date.today()}')"))
+    
+    conn = get_conn(); cur = conn.cursor()
+    try:
+        today = date.today()
+        sql = f"""SELECT bb.id, bb.book_id, b.title, b.subject, b.author,
+                         bb.user_id, br.borrower_name, bb.borrowed_date, bb.due_date,
+                         bb.status, bb.request_id
+                  FROM borrowed_books bb
+                  JOIN books b ON b.id = bb.book_id
+                  JOIN borrow_records br ON br.id = bb.request_id
+                  WHERE (bb.status='overdue' OR (bb.status='borrowed' AND bb.due_date < %s))
+                  ORDER BY bb.due_date ASC, bb.id DESC"""
+        
+        cur.execute(sql, (today,))
+        data = rows(cur)
+        
+        # Format dates and mark overdue
+        for d in data:
+            if d.get("borrowed_date"):
+                d["borrow_date"] = str(d["borrowed_date"])
+                del d["borrowed_date"]
+            if d.get("due_date") is not None:
+                d["due_date"] = str(d["due_date"])
+            # Mark as overdue if past due
+            if d["status"] == "borrowed" and date.fromisoformat(d["due_date"]) < today:
+                d["status"] = "overdue"
+        
+        return jsonify(data)
+    finally:
+        cur.close(); conn.close()
 
 
 @app.route("/api/borrow", methods=["POST"])
@@ -775,18 +839,24 @@ def borrow():
         # Create notification for all staff members
         notification_message = f"{user['username']} requested to borrow {book_title}"
         notification_title = f"Borrow Request: {book_title}"
-        
+         
         # Get all staff and admin users
         cur.execute("SELECT id FROM users WHERE role IN ('staff', 'admin')")
         staff_users = cur.fetchall()
-        
+         
         for staff_row in staff_users:
             staff_id = staff_row[0]
+            # Check if notification already exists for this request
             cur.execute(
-                "INSERT INTO notifications (user_id, recipient_role, title, message, type, related_id) VALUES (%s, %s, %s, %s, %s, %s)",
-                (staff_id, 'staff', notification_title, notification_message, 'BORROW_REQUEST', record_id)
+                "SELECT id FROM notifications WHERE user_id=%s AND related_id=%s AND type='BORROW_REQUEST'",
+                (staff_id, record_id)
             )
-        
+            if not cur.fetchone():  # Only insert if not already exists
+                cur.execute(
+                    "INSERT INTO notifications (user_id, recipient_role, title, message, type, related_id) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (staff_id, 'staff', notification_title, notification_message, 'BORROW_REQUEST', record_id)
+                )
+         
         conn.commit()
         return jsonify({
             "id": record_id,
@@ -897,10 +967,17 @@ def return_book(record_id):
         if status == "returned":
             return jsonify({"error": "Already returned"}), 400
 
+        # Update borrow_records
         cur.execute(
             "UPDATE borrow_records SET status='returned', returned_date=%s WHERE id=%s",
             (date.today(), record_id),
         )
+        # Update borrowed_books (mark as returned)
+        cur.execute(
+            "UPDATE borrowed_books SET status='returned' WHERE request_id=%s",
+            (record_id,)
+        )
+        # Increment available copies
         cur.execute("UPDATE books SET available_copies = available_copies + 1 WHERE id=%s", (book_id,))
         conn.commit()
         return jsonify({"message": "Book returned", "record_id": record_id})
@@ -963,19 +1040,26 @@ def approve_request(record_id):
         if not br:
             return jsonify({"error":"Book not found"}),404
         book_title, available_copies = br
-        # Do not approve if only one copy remains; reject and notify user
-        if available_copies <= 1:
-            msg = f"Staff has rejected your borrow request for \"{book_title}\" because only one copy is available. Please read it in the library; it is not available to borrow."
+        # Check if any copies are available
+        if available_copies <= 0:
+            msg = f"Staff has rejected your borrow request for \"{book_title}\" because no copies are available."
             cur.execute("UPDATE borrow_records SET status='rejected' WHERE id=%s", (record_id,))
             cur.execute(
                 "INSERT INTO notifications (user_id, recipient_role, title, message, type, related_id) VALUES (%s, %s, %s, %s, %s, %s)",
                 (user_id, 'user', f"Request Rejected: {book_title}", msg, 'OTHER', record_id)
             )
             conn.commit()
-            return jsonify({"message":"Request auto-rejected (single copy)", "record_id":record_id, "reason": msg}), 200
+            return jsonify({"message":"Request rejected (no copies)", "record_id":record_id, "reason": msg}), 200
         borrow_date = date.today()
         due_date = borrow_date + timedelta(days=LOAN_DAYS)
+        # Update borrow_records with borrowed status and dates
         cur.execute("UPDATE borrow_records SET status='borrowed', borrow_date=%s, due_date=%s WHERE id=%s", (borrow_date, due_date, record_id))
+        # Insert into borrowed_books table to track active borrowing
+        cur.execute(
+            "INSERT INTO borrowed_books (request_id, book_id, user_id, borrowed_date, due_date, status) VALUES (%s, %s, %s, %s, %s, %s)",
+            (record_id, book_id, user_id, borrow_date, due_date, 'borrowed')
+        )
+        # Decrement available copies
         cur.execute("UPDATE books SET available_copies = available_copies - 1 WHERE id=%s", (book_id,))
         msg = f"Staff has approved your borrow request for \"{book_title}\". Please collect the book and return by {str(due_date)}."
         cur.execute(

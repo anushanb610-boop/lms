@@ -3,6 +3,7 @@ import { api } from "../api";
 import { PageHeader } from "../components/PageHeader";
 import { formatDateShort } from "../utils/date";
 import { useAuth } from "../hooks/useAuth";
+import { onRefreshNeeded } from "../hooks/useRefresh";
 
 export default function BorrowedPage({ mode }) {
   const [records, setRecords] = useState([]);
@@ -10,13 +11,23 @@ export default function BorrowedPage({ mode }) {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
+  const fetchRecords = () => {
     setLoading(true);
     const loader = mode === "active" ? api.active() : api.history();
     loader
       .then(setRecords)
       .catch((e) => setMessage(e.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, [mode]);
+
+  useEffect(() => {
+    // Register for refresh signals
+    const unsubscribe = onRefreshNeeded(fetchRecords);
+    return () => unsubscribe();
   }, [mode]);
 
   const ret = async (id) => {

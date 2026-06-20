@@ -3,6 +3,7 @@ import { api } from "../api";
 import { PageHeader } from "../components/PageHeader";
 import { formatDateShort } from "../utils/date";
 import { useAuth } from "../hooks/useAuth";
+import { onRefreshNeeded } from "../hooks/useRefresh";
 
 export default function BooksPage({ canBorrow = true, showToast }) {
   const { user } = useAuth();
@@ -34,6 +35,14 @@ export default function BooksPage({ canBorrow = true, showToast }) {
 
   useEffect(() => {
     loadBooks();
+  }, [subject]);
+
+  useEffect(() => {
+    // Register for refresh signals to update book copies
+    const unsubscribe = onRefreshNeeded(() => {
+      loadBooks();
+    });
+    return () => unsubscribe();
   }, [subject]);
 
   const borrowBook = async (book) => {

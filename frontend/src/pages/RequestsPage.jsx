@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { PageHeader } from "../components/PageHeader";
+import { triggerRefreshForAll } from "../hooks/useRefresh";
 
 export default function RequestsPage({ showToast }) {
   const [requests, setRequests] = useState([]);
@@ -21,6 +22,8 @@ export default function RequestsPage({ showToast }) {
       if (action === "reject") await api.rejectRequest(recordId);
       showToast(`Request ${action}d successfully.`, "success");
       load();
+      // Trigger refresh for borrowed books page
+      triggerRefreshForAll();
     } catch (e) {
       setError(e.message);
       showToast(e.message, "error");

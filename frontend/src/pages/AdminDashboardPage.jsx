@@ -13,6 +13,7 @@ import { Bar, Pie } from 'react-chartjs-2';
 import { api } from "../api";
 import { PageHeader } from "../components/PageHeader";
 import { formatDateShort } from "../utils/date";
+import { onRefreshNeeded } from "../hooks/useRefresh";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -20,8 +21,18 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const fetchData = () => {
     api.adminDashboard().then(setData).catch((e) => setError(e.message));
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    // Register for refresh signals
+    const unsubscribe = onRefreshNeeded(fetchData);
+    return () => unsubscribe();
   }, []);
 
   if (error) {

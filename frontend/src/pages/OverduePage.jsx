@@ -2,18 +2,29 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { PageHeader } from "../components/PageHeader";
 import { formatDateShort } from "../utils/date";
+import { onRefreshNeeded } from "../hooks/useRefresh";
 
 export default function OverduePage() {
   const [records, setRecords] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const fetchRecords = () => {
     setLoading(true);
     api.overdue()
       .then((res) => setRecords(res || []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  useEffect(() => {
+    // Register for refresh signals
+    const unsubscribe = onRefreshNeeded(fetchRecords);
+    return () => unsubscribe();
   }, []);
 
   return (
